@@ -1,8 +1,8 @@
 # Dream-printer
 
-> System for generating 3D-printable .stl files from text prompts or UI
+> text to .stl basics
 
-![License](https://img.shields.io/badge/license-MIT-green) ![Version](https://img.shields.io/badge/version-1.0.0-blue) ![Language](https://img.shields.io/badge/language-Python-yellow) ![GitHub](https://img.shields.io/badge/GitHub-dream-printer/dream-printer-black?logo=github) ![Build Status](https://img.shields.io/github/actions/workflow/status/dream-printer/dream-printer/ci.yml?branch=main)
+![License](https://img.shields.io/badge/license-MIT-green) ![Version](https://img.shields.io/badge/version-1.0.0-blue) ![Language](https://img.shields.io/badge/language-Python-yellow) 
 
 ## 📋 Table of Contents
 
@@ -12,10 +12,10 @@
 
 ## ℹ️ Project Information
 
-- **👤 Author:** Dream-printer Team
+- **👤 Author:** nik-r08
 - **📦 Version:** 1.0.0
 - **📄 License:** MIT
-- **📂 Repository:** [https://github.com/dream-printer/dream-printer](https://github.com/dream-printer/dream-printer)
+- **📂 Repository:** [https://github.com/nik-r08/Dream-printer](https://github.com/nik-r08/Dream-printer)
 
 ## Features
 
