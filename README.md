@@ -2,8 +2,7 @@
 
 > text to .stl basics
 
-![License](https://img.shields.io/badge/license-MIT-green) ![Version](https://img.shields.io/badge/version-1.0.0-blue) ![Language](https://img.shields.io/badge/language-Python-yellow) ![GitHub](https://img.shields.io/badge/GitHub-nik-r08/Dream-printer-black?logo=github) ![Build Status](https://img.shields.io/github/actions/workflow/status/nik-r08/Dream-printer/ci.yml?branch=main)
-
+![License](https://img.shields.io/badge/license-MIT-green) ![Version](https://img.shields.io/badge/version-1.0.0-blue) ![Language](https://img.shields.io/badge/language-Python-yellow) 
 ## 📋 Table of Contents
 
 - [Features](#features)
