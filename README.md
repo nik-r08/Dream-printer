@@ -1,169 +1,65 @@
-# Dream-printer
+# Dream Printer
 
-> text to .stl basics
+Dream Printer turns a text prompt into a downloadable STL file from a Streamlit UI.
 
-![License](https://img.shields.io/badge/license-MIT-green) ![Version](https://img.shields.io/badge/version-1.0.0-blue) ![Language](https://img.shields.io/badge/language-Python-yellow) 
-## 📋 Table of Contents
-
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Requirements](#requirements)
-- [Safety & Disclaimers](#custom-1756759270578)
-
-## ℹ️ Project Information
-
-- **👤 Author:** nik-r08
-- **📦 Version:** 1.0.0
-- **📄 License:** MIT
-- **📂 Repository:** [https://github.com/nik-r08/Dream-printer](https://github.com/nik-r08/Dream-printer)
+The current generator is local-first: it does not require Docker, CadQuery, OpenSCAD, an API key, or a running LLM service. It parses the prompt into a printable object spec, composes mesh primitives in Python, and writes an ASCII STL.
 
 ## Features
 
-• Text-to-3D conversion using natural language prompts
-• End-to-end pipeline: LLM prompt → specification → CAD → STL file
-• Fast Streamlit frontend for user interaction
-• Local-first approach - no subscriptions required
-• Built-in examples and templates included
-• Support for parametric CAD generation
-• Compatible with CadQuery and OpenSCAD
-• Optional Docker containerization for easy deployment
+- Prompt-first STL generation
+- Streamlit UI with examples, mesh detail, size controls, generated spec preview, and STL download
+- Pure-Python STL writer with no CAD runtime dependency
+- Built-in templates for mugs, rings, boxes, vases, castles, robots, dragons, rockets, chairs, gears, lamps, and abstract sculptures
+- Deterministic output: the same prompt produces the same generated spec and mesh style
 
-## Installation
+## Setup
 
-## Setup Instructions
+Prerequisites:
 
-### Prerequisites
-- Python 3.8+
-- CadQuery or OpenSCAD
-- Streamlit
-- Requests library
-- Docker (optional)
-- Local LLM API (optional)
+- Python 3.10+
 
-### Installation Steps
+Install and run:
 
-1. **Create virtual environment:**
-```bash
-python -m venv dream-printer-env
-source dream-printer-env/bin/activate  # On Windows: dream-printer-env\Scripts\activate
-```
-
-2. **Clone the repository:**
-```bash
-git clone https://github.com/dream-printer/dream-printer.git
-cd dream-printer
-```
-
-3. **Install requirements:**
-```bash
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+streamlit run frontend\streamlit_app.py
 ```
 
-4. **Run the application:**
-```bash
-streamlit run app.py
-```
-
-5. **Access the app:**
-Open your browser to `http://localhost:8501`
+Open the local Streamlit URL shown in the terminal, usually `http://localhost:8501`.
 
 ## Usage
 
+1. Choose an example or type your own prompt.
+2. Pick mesh detail and default size.
+3. Click **Generate STL**.
+4. Download the generated `.stl` file.
+
+Example prompts:
+
+- `a detailed dragon lamp with wings, horns, a long tail, and a round base, about 120 mm tall`
+- `an ornate castle tower planter with battlements and a wide base, 100 mm`
+- `a cute mechanical robot toy with arms, legs, square head, and big eyes, 85 mm`
+- `a small sci-fi rocket ship with fins, circular windows, and a sturdy base, 60 mm`
+
 ## How It Works
 
-Dream Printer follows a simple 3-step process:
+1. `backend.stl_builder.compile_prompt_to_spec` extracts object type, style tags, features, size, and a deterministic seed from the prompt.
+2. `backend.stl_builder.build_mesh_from_spec` turns the spec into triangles using built-in primitive builders.
+3. `backend.stl_builder.write_ascii_stl` writes a standard ASCII STL file.
+4. `frontend/streamlit_app.py` displays the UI and serves the generated STL as a download.
 
-### 1. Prompt Parsing
-- Input your natural language description (e.g., "a coffee mug shaped like an octopus")
-- The system analyzes and interprets your request
-- Extracts key dimensional and geometric parameters
+## Tests
 
-### 2. Parametric CAD Generation
-- Converts parsed specifications into parametric CAD code
-- Uses CadQuery or OpenSCAD for 3D modeling
-- Applies design constraints and optimizations
-
-### 3. Frontend Preview
-- Displays real-time 3D preview in Streamlit interface
-- Allows parameter adjustments before final generation
-- Exports finished model as STL file for 3D printing
-
-## Example Usage
-
-### Basic Workflow
-1. Launch the application: `streamlit run app.py`
-2. Enter prompt: "a coffee mug shaped like an octopus"
-3. Review generated specifications
-4. Adjust parameters if needed
-5. Download your STL file
-
-### Sample Spec JSON
-```json
-{
-  "object_type": "mug",
-  "shape_modifier": "octopus",
-  "dimensions": {
-    "height": 10,
-    "diameter": 8,
-    "wall_thickness": 2
-  },
-  "features": [
-    "handle",
-    "tentacle_details",
-    "curved_body"
-  ]
-}
+```powershell
+python -m unittest discover -s tests
 ```
 
-### CAD Generator Example
-```python
-import cadquery as cq
+## Limits
 
-def generate_octopus_mug(spec):
-    # Create basic mug shape
-    mug = cq.Workplane("XY").cylinder(
-        height=spec["dimensions"]["height"],
-        radius=spec["dimensions"]["diameter"] / 2
-    )
-    
-    # Add octopus tentacles
-    for i in range(8):
-        angle = i * 45
-        tentacle = create_tentacle(angle)
-        mug = mug.union(tentacle)
-    
-    return mug
-```
-
-## Requirements
-
-• Docker (for containerized deployment)
-• Python 3.8 or higher
-• Streamlit (for web interface)
-• Local LLM API (for natural language processing)
-• At least 4GB RAM recommended
-• Compatible with Windows, macOS, and Linux
-
-## Safety & Disclaimers
-
-⚠️ **Important Safety Information:**
-- This system is experimental and in active development
-- Always inspect generated STL files before printing
-- Test with small, non-critical objects first
-- Verify dimensions and structural integrity
-- Check for printability (overhangs, supports needed)
-- Follow your 3D printer's safety guidelines
-
-## Credits & Acknowledgments
-
-- Built with [CadQuery](https://cadquery.readthedocs.io/) for parametric CAD
-- Powered by [Streamlit](https://streamlit.io/) for the web interface
-- Utilizes open-source AI models for natural language processing
-- Inspired by innovations from OpenAI Hackathons
-- Special thanks to the 3D printing and maker communities
+This is a deterministic procedural generator, not a full text-to-CAD AI model. It will create printable STL geometry for broad object prompts, but it does not understand arbitrary engineering constraints or produce production-ready mechanical parts. Inspect every STL before printing.
 
 ## License
 
-This project is dual-licensed under MIT and Apache-2.0. Choose the license that best fits your use case.
-
+MIT
