@@ -7,18 +7,68 @@ from datetime import datetime
 from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from backend.pipeline import ai_asset_pipeline, dream_printer_pipeline
 from backend.trellis_client import DEFAULT_TRELLIS_SPACE, TrellisSettings
 
+
+def render_ai_result(result: dict) -> None:
+    image_path = result.get("image_path")
+    glb_path = result.get("glb_path")
+    stl_path = result.get("stl_path")
+    cols = st.columns([0.35, 0.65])
+    with cols[0]:
+        if image_path and os.path.exists(image_path):
+            st.image(image_path, caption="Generated concept image", use_container_width=True)
+        st.markdown(
+            f"""
+            <div class="metric-row single">
+              <div class="metric-card"><span>Engine</span><strong>TRELLIS.2</strong></div>
+              <div class="metric-card"><span>Resolution</span><strong>{result.get('resolution')}</strong></div>
+              <div class="metric-card"><span>Target faces</span><strong>{result.get('target_faces'):,}</strong></div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with cols[1]:
+        if glb_path and os.path.exists(glb_path):
+            components.html(model_viewer_html(glb_path), height=520)
+            download_file(glb_path, "Download GLB", "model/gltf-binary")
+        if stl_path and os.path.exists(stl_path):
+            download_file(stl_path, "Download STL", "model/stl")
+        elif result.get("stl_error"):
+            st.warning(f"GLB was generated, but STL conversion failed: {result['stl_error']}")
+
+
+def download_file(path: str, label: str, mime: str) -> None:
+    with open(path, "rb") as file:
+        st.download_button(label, data=file, file_name=os.path.basename(path), mime=mime, use_container_width=True)
+
+
+def model_viewer_html(glb_path: str) -> str:
+    data = base64.b64encode(Path(glb_path).read_bytes()).decode("ascii")
+    return f"""
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <model-viewer
+      src="data:model/gltf-binary;base64,{data}"
+      camera-controls
+      auto-rotate
+      exposure="0.95"
+      shadow-intensity="0.7"
+      style="width:100%;height:500px;background:#eef3ef;border:1px solid #cbd8cd;border-radius:8px;">
+    </model-viewer>
+    """
+
+
 st.set_page_config(page_title="VoxelSmith Studio", layout="wide")
 
 st.markdown(
     """
     <style>
-    .stApp { background: #f4f1ea; color: #151515; }
+    .stApp { background: #f3f6f2; color: #151515; }
     .block-container { padding-top: 1.5rem; max-width: 1220px; }
     section[data-testid="stSidebar"] { background: #202523; }
     h1 { font-size: 2.55rem !important; line-height: 1.02 !important; letter-spacing: 0 !important; }
@@ -27,16 +77,17 @@ st.markdown(
         min-height: 28vh;
         display: flex;
         align-items: end;
-        border-bottom: 1px solid #d6cdbc;
+        border-bottom: 1px solid #cbd8cd;
         padding: 1.25rem 0 1.4rem 0;
         margin-bottom: 1rem;
     }
     .hero-copy { max-width: 820px; }
-    .eyebrow { color: #6d4f2f; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
-    .hint { color: #514b42; font-size: 1rem; line-height: 1.5; margin-top: 0.55rem; }
+    .eyebrow { color: #a5402d; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0; }
+    .hint { color: #3f4a43; font-size: 1rem; line-height: 1.5; margin-top: 0.55rem; }
     .metric-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin: 1rem 0; }
-    .metric-card { background: #fffaf0; border: 1px solid #ded5c4; border-radius: 8px; padding: 0.85rem 0.95rem; }
-    .metric-card span { color: #666; font-size: 0.8rem; }
+    .metric-row.single { grid-template-columns: 1fr; }
+    .metric-card { background: #ffffff; border: 1px solid #cbd8cd; border-radius: 8px; padding: 0.85rem 0.95rem; }
+    .metric-card span { color: #5d665f; font-size: 0.8rem; }
     .metric-card strong { display: block; color: #161616; font-size: 1.22rem; margin-top: 0.1rem; }
     .stButton button, .stDownloadButton button { border-radius: 8px; border: 1px solid #202523; background: #202523; color: white; min-height: 2.75rem; }
     .stButton button:hover, .stDownloadButton button:hover { border-color: #0f1110; background: #0f1110; color: white; }
@@ -122,7 +173,7 @@ with ai_tab:
             with st.status("Generating concept image and 3D asset through Hugging Face TRELLIS.2...", expanded=True):
                 result = ai_asset_pipeline(prompt, output_dir=output_dir, settings=settings)
             st.success("AI asset generated.")
-            _render_ai_result(result)
+            render_ai_result(result)
         except Exception as exc:
             st.error(f"TRELLIS generation failed: {exc}")
             st.info("Switch to Instant STL for local generation, or set HF_TOKEN and try again if the Hugging Face Space is busy.")
@@ -152,56 +203,8 @@ with local_tab:
                 """,
                 unsafe_allow_html=True,
             )
-            _download_file(output_path, "Download STL", "model/stl")
+            download_file(output_path, "Download STL", "model/stl")
             st.subheader("Generated Spec")
             st.json(spec)
         except Exception as exc:
             st.error(f"Local generation failed: {exc}")
-
-
-def _render_ai_result(result: dict) -> None:
-    image_path = result.get("image_path")
-    glb_path = result.get("glb_path")
-    stl_path = result.get("stl_path")
-    cols = st.columns([0.35, 0.65])
-    with cols[0]:
-        if image_path and os.path.exists(image_path):
-            st.image(image_path, caption="Generated concept image", use_column_width=True)
-        st.markdown(
-            f"""
-            <div class="metric-row" style="grid-template-columns: 1fr;">
-              <div class="metric-card"><span>Engine</span><strong>TRELLIS.2</strong></div>
-              <div class="metric-card"><span>Resolution</span><strong>{result.get('resolution')}</strong></div>
-              <div class="metric-card"><span>Target faces</span><strong>{result.get('target_faces'):,}</strong></div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with cols[1]:
-        if glb_path and os.path.exists(glb_path):
-            st.components.v1.html(_model_viewer_html(glb_path), height=520)
-            _download_file(glb_path, "Download GLB", "model/gltf-binary")
-        if stl_path and os.path.exists(stl_path):
-            _download_file(stl_path, "Download STL", "model/stl")
-        elif result.get("stl_error"):
-            st.warning(f"GLB was generated, but STL conversion failed: {result['stl_error']}")
-
-
-def _download_file(path: str, label: str, mime: str) -> None:
-    with open(path, "rb") as file:
-        st.download_button(label, data=file, file_name=os.path.basename(path), mime=mime, use_container_width=True)
-
-
-def _model_viewer_html(glb_path: str) -> str:
-    data = base64.b64encode(Path(glb_path).read_bytes()).decode("ascii")
-    return f"""
-    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    <model-viewer
-      src="data:model/gltf-binary;base64,{data}"
-      camera-controls
-      auto-rotate
-      exposure="0.95"
-      shadow-intensity="0.7"
-      style="width:100%;height:500px;background:#efe8dc;border:1px solid #d6cdbc;border-radius:8px;">
-    </model-viewer>
-    """
