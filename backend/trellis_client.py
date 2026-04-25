@@ -54,11 +54,11 @@ def generate_trellis_asset(prompt: str, output_dir: str, settings: TrellisSettin
     client = Client(settings.space, hf_token=token) if token else Client(settings.space)
 
     image_result = client.predict(prompt, api_name="/generate_txt2img")
-    image_path = _copy_first_file(image_result, output / "concept.png")
+    image_path = _copy_first_file(image_result, output / "concept")
 
     try:
         processed_image = client.predict(handle_file(image_path), api_name="/preprocess_image")
-        image_path = _copy_first_file(processed_image, output / "concept_processed.png")
+        image_path = _copy_first_file(processed_image, output / "concept_processed")
     except Exception:
         # Some Spaces preprocess uploaded images automatically. Keep the raw concept image.
         pass
