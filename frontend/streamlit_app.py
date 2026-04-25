@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from backend.pipeline import dream_printer_pipeline
 
-st.set_page_config(page_title="Dream Printer", page_icon="DP", layout="wide")
+st.set_page_config(page_title="Dream Printer", layout="wide")
 
 st.markdown(
     """
@@ -84,7 +84,7 @@ examples = {
 with st.sidebar:
     st.subheader("Build Settings")
     example_name = st.selectbox("Example", list(examples.keys()))
-    detail = st.segmented_control("Mesh detail", ["fast", "balanced", "detailed"], default="balanced")
+    detail = st.radio("Mesh detail", ["fast", "balanced", "detailed"], index=1, horizontal=True)
     target_size = st.slider("Default size (mm)", min_value=30, max_value=180, value=90, step=5)
     st.caption("Prompts can override size with values like 75 mm, 8 cm, or 3 inches.")
 
@@ -102,12 +102,10 @@ with left:
 with right:
     st.subheader("What it can build")
     st.markdown(
-        """
-        - Cups and mugs with handles
-        - Rings, gears, boxes, vases, lamps
-        - Castles, rockets, robots, chairs
-        - Dragon and abstract sculptures
-        """
+        "- Cups and mugs with handles\n"
+        "- Rings, gears, boxes, vases, lamps\n"
+        "- Castles, rockets, robots, chairs\n"
+        "- Dragon and abstract sculptures"
     )
     st.caption("The generator composes printable primitives from the prompt. It is deterministic, so the same prompt creates the same model.")
 
