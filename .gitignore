@@ -1,0 +1,4 @@
+generated_models/
+__pycache__/
+*.pyc
+.venv/
