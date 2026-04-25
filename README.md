@@ -1,169 +1,89 @@
-# Dream-printer
+# VoxelSmith Studio
 
-> text to .stl basics
+VoxelSmith Studio is a prompt-to-3D workbench for generating AI 3D assets and printer-friendly files from one interface.
 
-![License](https://img.shields.io/badge/license-MIT-green) ![Version](https://img.shields.io/badge/version-1.0.0-blue) ![Language](https://img.shields.io/badge/language-Python-yellow) 
-## 📋 Table of Contents
+It has two engines:
 
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Requirements](#requirements)
-- [Safety & Disclaimers](#custom-1756759270578)
+- **TRELLIS.2 Cloud**: calls a Hugging Face Space that chains text-to-image with Microsoft TRELLIS.2 image-to-3D generation, then returns GLB and attempts STL conversion.
+- **Instant STL**: a local procedural generator that creates a deterministic STL with no account, no GPU, and no cloud queue.
 
-## ℹ️ Project Information
+## Why It Stands Out
 
-- **👤 Author:** nik-r08
-- **📦 Version:** 1.0.0
-- **📄 License:** MIT
-- **📂 Repository:** [https://github.com/nik-r08/Dream-printer](https://github.com/nik-r08/Dream-printer)
+- **Meshy-style workflow, open model stack**: prompt in, AI mesh out, using TRELLIS.2 instead of a closed-only workflow.
+- **GLB and STL outputs**: GLB for textured asset workflows, STL for 3D printing.
+- **Built-in fallback**: if the Hugging Face Space is busy, the local STL engine still works.
+- **Prompt craft presets**: example prompts are written for isolated product/object generation, which is what image-to-3D models need.
+- **Inspectable generation**: local mode exposes the generated object spec; AI mode shows the generated concept image and 3D preview.
 
-## Features
+## Setup
 
-• Text-to-3D conversion using natural language prompts
-• End-to-end pipeline: LLM prompt → specification → CAD → STL file
-• Fast Streamlit frontend for user interaction
-• Local-first approach - no subscriptions required
-• Built-in examples and templates included
-• Support for parametric CAD generation
-• Compatible with CadQuery and OpenSCAD
-• Optional Docker containerization for easy deployment
+Prerequisites:
 
-## Installation
+- Python 3.10+
+- Internet access for TRELLIS.2 Cloud mode
+- Optional: a Hugging Face token if the Space is rate-limited or requires auth
 
-## Setup Instructions
+Install and run:
 
-### Prerequisites
-- Python 3.8+
-- CadQuery or OpenSCAD
-- Streamlit
-- Requests library
-- Docker (optional)
-- Local LLM API (optional)
-
-### Installation Steps
-
-1. **Create virtual environment:**
-```bash
-python -m venv dream-printer-env
-source dream-printer-env/bin/activate  # On Windows: dream-printer-env\Scripts\activate
-```
-
-2. **Clone the repository:**
-```bash
-git clone https://github.com/dream-printer/dream-printer.git
-cd dream-printer
-```
-
-3. **Install requirements:**
-```bash
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+streamlit run frontend\streamlit_app.py
 ```
 
-4. **Run the application:**
-```bash
-streamlit run app.py
+Optional environment variables:
+
+```powershell
+$env:HF_TOKEN="your_hugging_face_token"
+$env:VOXELSMITH_TRELLIS_SPACE="prithivMLmods/TRELLIS.2-Text-to-3D"
 ```
 
-5. **Access the app:**
-Open your browser to `http://localhost:8501`
+Open the Streamlit URL shown in the terminal, usually `http://localhost:8501`.
 
 ## Usage
 
+1. Pick a prompt starter or write your own prompt.
+2. Choose **TRELLIS.2 Cloud** for high-fidelity AI assets, or **Instant STL** for local generation.
+3. In AI Mesh mode, choose resolution, face target, texture size, and sampler settings.
+4. Generate and download GLB and/or STL.
+
+Example prompts:
+
+- `a highly detailed collectible dragon figurine, curled tail, layered wings, small horns, stylized resin toy, isolated object, clean white background`
+- `a futuristic cyberpunk sneaker with translucent sole, hard surface panels, glowing accents, product render, isolated object`
+- `a cute desktop robot mascot with round eyes, chunky arms, small antenna, toy-like plastic material, isolated object`
+- `an ornate fantasy lantern with carved metal frame, glass panels, small feet, premium game asset, isolated object`
+
 ## How It Works
 
-Dream Printer follows a simple 3-step process:
+### TRELLIS.2 Cloud
 
-### 1. Prompt Parsing
-- Input your natural language description (e.g., "a coffee mug shaped like an octopus")
-- The system analyzes and interprets your request
-- Extracts key dimensional and geometric parameters
+1. `backend.trellis_client.generate_trellis_asset` calls the configured Hugging Face Space.
+2. The Space generates a concept image from the prompt.
+3. TRELLIS.2 converts that image into a textured GLB asset.
+4. VoxelSmith copies the GLB locally and attempts STL conversion with `trimesh`.
 
-### 2. Parametric CAD Generation
-- Converts parsed specifications into parametric CAD code
-- Uses CadQuery or OpenSCAD for 3D modeling
-- Applies design constraints and optimizations
+### Instant STL
 
-### 3. Frontend Preview
-- Displays real-time 3D preview in Streamlit interface
-- Allows parameter adjustments before final generation
-- Exports finished model as STL file for 3D printing
+1. `backend.stl_builder.compile_prompt_to_spec` extracts object type, style tags, features, size, and seed.
+2. `backend.stl_builder.build_mesh_from_spec` turns the spec into triangle geometry.
+3. `backend.stl_builder.write_ascii_stl` writes a standard ASCII STL file.
 
-## Example Usage
+## Tests
 
-### Basic Workflow
-1. Launch the application: `streamlit run app.py`
-2. Enter prompt: "a coffee mug shaped like an octopus"
-3. Review generated specifications
-4. Adjust parameters if needed
-5. Download your STL file
-
-### Sample Spec JSON
-```json
-{
-  "object_type": "mug",
-  "shape_modifier": "octopus",
-  "dimensions": {
-    "height": 10,
-    "diameter": 8,
-    "wall_thickness": 2
-  },
-  "features": [
-    "handle",
-    "tentacle_details",
-    "curved_body"
-  ]
-}
+```powershell
+python -m unittest discover -s tests
 ```
 
-### CAD Generator Example
-```python
-import cadquery as cq
+The tests cover local generation and file-response parsing. TRELLIS.2 Cloud mode requires network access and is best verified manually from the Streamlit app.
 
-def generate_octopus_mug(spec):
-    # Create basic mug shape
-    mug = cq.Workplane("XY").cylinder(
-        height=spec["dimensions"]["height"],
-        radius=spec["dimensions"]["diameter"] / 2
-    )
-    
-    # Add octopus tentacles
-    for i in range(8):
-        angle = i * 45
-        tentacle = create_tentacle(angle)
-        mug = mug.union(tentacle)
-    
-    return mug
-```
+## Limits
 
-## Requirements
+TRELLIS.2 Cloud depends on Hugging Face Space availability, queue time, and upstream API compatibility. Generated meshes can still need inspection, repair, scaling, or support planning before printing.
 
-• Docker (for containerized deployment)
-• Python 3.8 or higher
-• Streamlit (for web interface)
-• Local LLM API (for natural language processing)
-• At least 4GB RAM recommended
-• Compatible with Windows, macOS, and Linux
-
-## Safety & Disclaimers
-
-⚠️ **Important Safety Information:**
-- This system is experimental and in active development
-- Always inspect generated STL files before printing
-- Test with small, non-critical objects first
-- Verify dimensions and structural integrity
-- Check for printability (overhangs, supports needed)
-- Follow your 3D printer's safety guidelines
-
-## Credits & Acknowledgments
-
-- Built with [CadQuery](https://cadquery.readthedocs.io/) for parametric CAD
-- Powered by [Streamlit](https://streamlit.io/) for the web interface
-- Utilizes open-source AI models for natural language processing
-- Inspired by innovations from OpenAI Hackathons
-- Special thanks to the 3D printing and maker communities
+Instant STL is procedural and fast, but it is not a replacement for high-fidelity AI mesh generation or engineering CAD.
 
 ## License
 
-This project is dual-licensed under MIT and Apache-2.0. Choose the license that best fits your use case.
-
+MIT
